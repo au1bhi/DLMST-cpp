@@ -14,7 +14,7 @@
 ## Overview / 中文简介
 
 **English:**  
-`DLMST-cpp` is a self-contained, dependency-free **C++20** implementation of the **Deterministic Linear-Time Minimum Spanning Tree (DLMST)** algorithm introduced by Khanna, Putterman, and Song (2026), which settled the worst-case deterministic comparison complexity of the **Minimum Spanning Tree / Minimum Spanning Forest (MST / MSF)** problem at $T^*(m,n) = O(m)$ and obtained an $O(m)$ deterministic algorithm via the **Pettie–Ramachandran (2002)** reduction.
+`DLMST-cpp` is a self-contained, dependency-free **C++20** implementation of the **Deterministic Linear-Time Minimum Spanning Tree (DLMST)** algorithm introduced by Khanna, Putterman, and Song (2026), which settled the worst-case deterministic comparison complexity of the **Minimum Spanning Tree / Minimum Spanning Forest (MST / MSF)** problem at $T^{\ast}(m,n) = O(m)$ and obtained an $O(m)$ deterministic algorithm via the **Pettie–Ramachandran (2002)** reduction.
 
 This repository implements the full algorithmic stack in pure comparison-model form (accessing edge weights solely through a strict pairwise `WeightOracle`), including:
 - **Borůvka vertex contraction phases** (`Definition 2.8`)
@@ -64,21 +64,21 @@ flowchart LR
 | **Borůvka Contraction (`Definition 2.8`)** | [include/dlmst/boruvka.hpp](include/dlmst/boruvka.hpp) | `run_boruvka_phases` contracting cheapest incident edges and eliminating self-loops & isolated vertices |
 | **Deterministic Schedule (`Section 3.4`, `Lemma 3.11`)** | [include/dlmst/schedule.hpp](include/dlmst/schedule.hpp) | Comparison-free `build_schedule` via SplitMix64 + exhaustive small-graph `find_exact_schedule_small` verifying Lemma 3.11 across all schedules and $m!$ weight orders |
 | **Batch Processing (`Section 3.2`, `Lemmas 3.2–3.3`)** | [include/dlmst/batch_processor.hpp](include/dlmst/batch_processor.hpp) | Recursive Lemma 3.3 $k$-lightest admissible representative selection, cached projection admissibility tests, $\le 2n/r$ hitting-set portal construction $P'$, and spoke updates |
-| **Preferred Action Estimation (`Section 3.5`, `Claim 3.12`)** | [include/dlmst/action_estimator.hpp](include/dlmst/action_estimator.hpp) | `DAGTopological` mode: queries deterministic sample $S^*$ on $F$, records all comparisons into a DAG on $T = F \cup \{\sigma(v)\}$, runs Kahn topological sort (0 comparisons), and resolves all remaining ambiguous edges with 0 real weight comparisons |
+| **Preferred Action Estimation (`Section 3.5`, `Claim 3.12`)** | [include/dlmst/action_estimator.hpp](include/dlmst/action_estimator.hpp) | `DAGTopological` mode: queries deterministic sample $S^{\ast}$ on $F$, records all comparisons into a DAG on $T = F \cup \lbrace \sigma(v) \rbrace$, runs Kahn topological sort (0 comparisons), and resolves all remaining ambiguous edges with 0 real weight comparisons |
 | **Certificate & MSF (`Algorithms 1 & 2`, `Claim 3.5`, `Lemma 3.7`)** | [include/dlmst/dlmst.hpp](include/dlmst/dlmst.hpp) | Mutual recursion between `certificate_recursive` and `msf_recursive`, edge lifting, first-invalid-level rejection propagation ($R''$ vs $R'\setminus R''$), $U(F)$ filtering, and optional `verify_invariants` assertions for Claim 3.5 & Lemma 3.2 |
 
 ---
 
 ## Implementation Highlights & Theory vs. Engineering Note
 
-The paper establishes $T^*(m,n) = O(m)$ in the **deterministic comparison-tree model** and derives a uniform $O(m)$-time algorithm via the **Pettie–Ramachandran (2002)** optimal micro-tree lookup theorem. In the pure theoretical proof:
-1. Choosing the deterministic schedule $\rho^*$ (`Lemma 3.11`) and distinguishing subset $S^*$ (`Claim 3.12`) invoke comparison-free exhaustive enumeration over exponentially many histories/schedules.
+The paper establishes $T^{\ast}(m,n) = O(m)$ in the **deterministic comparison-tree model** and derives a uniform $O(m)$-time algorithm via the **Pettie–Ramachandran (2002)** optimal micro-tree lookup theorem. In the pure theoretical proof:
+1. Choosing the deterministic schedule $\rho^{\ast}$ (`Lemma 3.11`) and distinguishing subset $S^{\ast}$ (`Claim 3.12`) invoke comparison-free exhaustive enumeration over exponentially many histories/schedules.
 2. The asymptotic parameter choices $t = \gamma d^3, r = 8t^3, k = r^2$ (`Lemma 3.1`) yield $k \ge 4096$ at depth 1 and millions at deeper levels, requiring astronomically large graphs before portals ever form.
 
 To preserve **100% algorithmic fidelity** while remaining **fast, polynomial-time executable, and thoroughly testable** on real graphs:
 - **`ParamSchedule::PaperAsymptotic`** faithfully uses $t = \max(2, \gamma d^3), r = 8t^3, k = r^2$.
-- **`ParamSchedule::Practical`** ($t = 2 + d, r = 2t + 2, k = r^2$) and **`ParamSchedule::DeepStress`** ($t = 2, r = 5, k = 25$) preserve the critical contraction invariant $2t/r < 1$ (shrinking portals every level) while genuinely triggering multi-level portal projection (`depth >= 2`), admissibility failures, and rejection propagation on moderate-size graphs.
-- **`EstimatorMode::DAGTopological`** turns the theoretical existence proof of Section 3.5 into a concrete polynomial-time algorithm: comparisons performed while querying $S^*$ form an acyclic precedence DAG on $T = F \cup \{\sigma(v)\}$, whose topological sort resolves the remaining edges in $A_i$ with **zero additional real weight comparisons** while guaranteeing 100% agreement on $S^*$.
+- **`ParamSchedule::Practical`** ($t = 2 + d, r = 2t + 2, k = r^2$) and **`ParamSchedule::DeepStress`** ($t = 2, r = 5, k = 25$) preserve the critical contraction invariant $2t/r \lt 1$ (shrinking portals every level) while genuinely triggering multi-level portal projection (`depth >= 2`), admissibility failures, and rejection propagation on moderate-size graphs.
+- **`EstimatorMode::DAGTopological`** turns the theoretical existence proof of Section 3.5 into a concrete polynomial-time algorithm: comparisons performed while querying $S^{\ast}$ form an acyclic precedence DAG on $T = F \cup \lbrace \sigma(v) \rbrace$, whose topological sort resolves the remaining edges in $A_i$ with **zero additional real weight comparisons** while guaranteeing 100% agreement on $S^{\ast}$.
 - **`find_exact_schedule_small`** constructively verifies Lemma 3.11 by exhaustively checking all $(t^2)^m$ schedules against all $m!$ weight permutations on small graphs such as $K_4$.
 
 ---
@@ -133,9 +133,9 @@ All checks below were compiled with `-Wall -Wextra -Wpedantic` (zero warnings) a
 ### 1. Unit, Invariant & Component Tests (`make test` & `make asan`)
 - **BFPRT Deterministic Selection**: 200 random/sorted/reverse/duplicate-key arrays matched `std::sort` 100%; for $n = 10{,}000$, BFPRT used **80,297** comparisons ($8.03n$).
 - **King + Komlós/Hagerup `path_max_queries`**: 100% exact match against naive BFS across 40 varied trees/paths/stars/caterpillars/disconnected forests; for $n = 2{,}000, q = 10{,}000$, used **15,756** comparisons ($C/(n+q) = \mathbf{1.313}$) and verified **100% DAG-dominance consistency**.
-- **Batch Processor (Lemmas 3.2 & 3.3)**: 30 randomized multigraph trials with mixed admissibility matched brute-force selection 100%; batch portal test produced $|P'| = 7 \le 32$ and $|D| = 1077$ satisfying Lemma 3.2.
+- **Batch Processor (Lemmas 3.2 & 3.3)**: 30 randomized multigraph trials with mixed admissibility matched brute-force selection 100%; batch portal test produced $\lvert P' \rvert = 7 \le 32$ and $\lvert D \rvert = 1077$ satisfying Lemma 3.2.
 - **Constructive Lemma 3.11 Schedule Search on $K_4$**: Exhaustively evaluated all **4,096** schedules $\times$ **720** permutations ($6!$), finding a deterministic schedule with **0/6** worst-case bad-round edges.
-- **Action Estimator (`DAGTopological` 25% sub-sampling)**: Queried **717 / 2,871** ambiguous edges, saved **5,314** comparisons vs. exact querying, achieved **100%** agreement on $S^*$ and **98.875%** agreement on the full ambiguous set.
+- **Action Estimator (`DAGTopological` 25% sub-sampling)**: Queried **717 / 2,871** ambiguous edges, saved **5,314** comparisons vs. exact querying, achieved **100%** agreement on $S^{\ast}$ and **98.875%** agreement on the full ambiguous set.
 - **End-to-End & `DeepStress` Invariants**: Matched `kruskal_msf` 100% across degenerate graphs (empty, isolated, single-edge, loops-only, all-equal tie-breaking, negative/adversarial weights) and families (ER sparse/dense, $K_{80}$, $30\times 30$ grid, Barabási–Albert hub, multigraphs) across `Practical`, `PaperAsymptotic`, `Exact`, and `DeepStress` (`max_cert_depth = 2`, `portals = 3`, `projected = 14`, `rejected = 1`, `dag_invocations = 2`, Claim 3.5 & Lemma 3.2 runtime assertions passing).
 
 ### 2. Scaling & Comparison Breakdown Benchmarks (`make bench`)
