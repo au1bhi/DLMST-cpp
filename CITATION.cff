@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software or refer to the algorithm, please cite the original paper by Sanjeev Khanna, Aaron Putterman, and Junkai Song."
+type: software
+title: "DLMST-cpp: Unofficial C++20 Reproduction of Deterministic Linear-Time MST"
+authors:
+  - name: "Au1Bhi"
+repository-code: "https://github.com/au1bhi/DLMST-cpp"
+url: "https://github.com/Louiealbp/DLMST"
+license: MIT
+date-released: 2026-11-23
+preferred-citation:
+  type: unpublished
+  title: "A Deterministic Linear Time Algorithm for Minimum Spanning Tree"
+  authors:
+    - family-names: "Khanna"
+      given-names: "Sanjeev"
+      affiliation: "Courant Institute, New York University"
+    - family-names: "Putterman"
+      given-names: "Aaron"
+      affiliation: "School of Engineering and Applied Sciences, Harvard University"
+    - family-names: "Song"
+      given-names: "Junkai"
+      affiliation: "Courant Institute, New York University"
+  year: 2026
+  month: 11
+  url: "https://github.com/Louiealbp/DLMST"
+  notes: "Original manuscript and companion repository (final.pdf)."
